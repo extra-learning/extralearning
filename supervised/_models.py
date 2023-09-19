@@ -30,12 +30,18 @@ class Classification():
             Controls the extralearning verbosity when fitting and predicting. 
             Note: All estimator verbose are set to 0 or False, meaning no output other than extralearning information.
         """
+        
+        assert multi_class is None or multi_class in ["ovr", "ovo", "auto"], TypeError(f'multi_class must be str: "ovr", "ovo", "auto" or None, not {type(multi_class)}.')
+        assert random_state is None or isinstance(random_state, int), TypeError(f"random_state must be int or None, not {type(random_state)}.")
+        assert n_jobs is None or isinstance(n_jobs, int), TypeError(f"n_jobs must be int or None, not {type(n_jobs)}.")
+        assert isinstance(verbose, bool), TypeError(f"verbose must be bool, not {type(verbose)}.")
+        
         self.multi_class = multi_class
         self.random_state = random_state
         self.n_jobs = n_jobs
         self.verbose = verbose
             
-    def return_pandas(self, pandas = True):
+    def return_pandas(self, pandas = True) -> None:
         """
         The default output in the form of a pandas DataFrame or pandas Series, depending of the return.
         
@@ -49,11 +55,11 @@ class Classification():
         
         self.__pandas = pandas
    
-    def __estimators(self):
+    def __estimators(self) -> None:
         
         if self.multi_class is None: 
             
-            self.estimators = [
+            self._estimators = [
                 ("Logistic Regression",sklearn.linear_model.LogisticRegression(random_state = self.random_state, n_jobs = self.n_jobs)),
                 ("Decision Tree",sklearn.tree.DecisionTreeClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
                 ("Random Forest",sklearn.ensemble.RandomForestClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
@@ -72,14 +78,34 @@ class Classification():
                 ("Gaussian Process",sklearn.gaussian_process.GaussianProcessClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
                 ("Multilayer perceptron",sklearn.neural_network.MLPClassifier(random_state = self.random_state, n_jobs = self.n_jobs))
             ]
-        else:
-            self.estimators = [
-                
-            ]
     
+    def get_estimators(self) -> list:
+        return self._estimators
+        
     def add_estimator(self, estimator: tuple):
-        if estimator not in self.__binary__estimators
-    
-    def get_params(self):
-        pass
+        """
+        Parameters
+        ----------
+        estimator: tuple, (name, estimator)
+            - name: str, name of the estimator
+            - estimator: A classifier that implements `.fit()`, `.predict()` and `.predict_proba()` if available.
+                
+        Examples
+        --------
+        >>> from extralearning import Classification
+        >>> from sklearn.ensemble import RandomForestClassifier
+        
+        >>> model = Classification()
+        
+        >>> model.add_estimator(estimator = ("Random Forest", RandomForestClassifier()))
+        
+        Note: To check the default estimators, you can use the `.get_estimators()` method.
+        """
+        
+        if self.multi_class is None:
+            self.estimators.append(estimator)
+            
+        else:
+            pass # PENDING
+
         
