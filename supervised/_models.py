@@ -44,7 +44,7 @@ class Classification():
         pandas: Bool, default = True
         """
         
-        if not isinstance(pandas, bool)):
+        if not isinstance(pandas, bool):
             raise TypeError(f"Parameter must be Bool, not {type(pandas)}.")
         
         self.__pandas = pandas
@@ -53,29 +53,29 @@ class Classification():
         
         if self.multi_class is None: 
             
-            self.estimators = {
-                "Logistic Regression":sklearn.linear_model.LogisticRegression(random_state = self.random_state, n_jobs = self.n_jobs),
-                "Decision Tree":sklearn.tree.DecisionTreeClassifier(random_state = self.random_state, n_jobs = self.n_jobs),
-                "Random Forest":sklearn.ensemble.RandomForestClassifier(random_state = self.random_state, n_jobs = self.n_jobs),
-                "Linear Support Vector Machine":sklearn.svm.SVC(random_state = self.random_state, probability = True, kernel = "linear", n_jobs = self.n_jobs),
-                "Linear Support Vector Machine":sklearn.svm.SVC(random_state = self.random_state, probability = True, kernel = "rbf", n_jobs = self.n_jobs),
-                "K-nearest neighbors":sklearn.neighbors.KNeighborsClassifier(n_jobs = self.n_jobs),
-                "Naive Bayes":sklearn.naive_bayes.GaussianNB(n_jobs = self.n_jobs),
-                "Gradient Boosting":sklearn.ensemble.GradientBoostingClassifier(random_state = self.random_state, n_jobs = self.n_jobs),
-                "XGBoost":xgboost.XGBClassifier(random_state = self.random_state, nthread = self.n_jobs),
-                "LightGBM":lightgbm.LGBMClassifier(random_state = self.random_state, verbose = -1, n_jobs = self.n_jobs),
-                "CatBoost":catboost.CatBoostClassifier(random_state = self.random_state, verbose = False, thread_count = self.n_jobs),
-                "AdaBoost":sklearn.ensemble.AdaBoostClassifier(random_state = self.random_state, n_jobs = self.n_jobs),
-                "Linear Discriminant":sklearn.discriminant_analysis.LinearDiscriminantAnalysis(n_jobs = self.n_jobs),
-                "Quadratic Discriminant":sklearn.discriminant_analysis.QuadraticDiscriminantAnalysis(n_jobs = self.n_jobs),
-                "Extra Trees":sklearn.ensemble.ExtraTreesClassifier(random_state = self.random_state, n_jobs = self.n_jobs),
-                "Gaussian Process":sklearn.gaussian_process.GaussianProcessClassifier(random_state = self.random_state, n_jobs = self.n_jobs),
-                "Multilayer perceptron":sklearn.neural_network.MLPClassifier(random_state = self.random_state, n_jobs = self.n_jobs)
-                }
+            self.estimators = [
+                ("Logistic Regression",sklearn.linear_model.LogisticRegression(random_state = self.random_state, n_jobs = self.n_jobs)),
+                ("Decision Tree",sklearn.tree.DecisionTreeClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
+                ("Random Forest",sklearn.ensemble.RandomForestClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
+                ("Linear Support Vector Machine",sklearn.svm.SVC(random_state = self.random_state, probability = True, kernel = "linear", n_jobs = self.n_jobs)),
+                ("RBF Support Vector Machine",sklearn.svm.SVC(random_state = self.random_state, probability = True, kernel = "rbf", n_jobs = self.n_jobs)),
+                ("K-nearest neighbors",sklearn.neighbors.KNeighborsClassifier(n_jobs = self.n_jobs)),
+                ("Naive Bayes",sklearn.naive_bayes.GaussianNB(n_jobs = self.n_jobs)),
+                ("Gradient Boosting",sklearn.ensemble.GradientBoostingClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
+                ("XGBoost",xgboost.XGBClassifier(random_state = self.random_state, nthread = self.n_jobs)),
+                ("LightGBM",lightgbm.LGBMClassifier(random_state = self.random_state, verbose = -1, n_jobs = self.n_jobs)),
+                ("CatBoost",catboost.CatBoostClassifier(random_state = self.random_state, verbose = False, thread_count = self.n_jobs)),
+                ("AdaBoost",sklearn.ensemble.AdaBoostClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
+                ("Linear Discriminant",sklearn.discriminant_analysis.LinearDiscriminantAnalysis(n_jobs = self.n_jobs)),
+                ("Quadratic Discriminant",sklearn.discriminant_analysis.QuadraticDiscriminantAnalysis(n_jobs = self.n_jobs)),
+                ("Extra Trees",sklearn.ensemble.ExtraTreesClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
+                ("Gaussian Process",sklearn.gaussian_process.GaussianProcessClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
+                ("Multilayer perceptron",sklearn.neural_network.MLPClassifier(random_state = self.random_state, n_jobs = self.n_jobs))
+            ]
         else:
-            self.estimators = {
+            self.estimators = [
                 
-            }          
+            ]
     
     def add_estimator(self, estimator: tuple):
         if estimator not in self.__binary__estimators
