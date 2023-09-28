@@ -1,7 +1,6 @@
 # Authors: Liam Arguedas <iliamftw2013@gmail.com>
 # License: BSD 3 clause
 
-import abc
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -22,7 +21,8 @@ from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.neural_network import MLPClassifier
 
 class Classification():
-    def __init__(self, multi_class = None, random_state = None, n_jobs = None, verbose = True):
+    
+    def __init__(self, multi_class = None, random_state = None, n_jobs = None, verbose = True) -> None:
         """
         Summarizes variety of Classification Machine Learning models into one instance.
         
@@ -96,7 +96,7 @@ class Classification():
         """
         return self.__estimators
         
-    def add_estimator(self, estimator: tuple):
+    def add_estimator(self, estimator: tuple) -> None:
         """
         Parameters
         ----------
@@ -121,8 +121,27 @@ class Classification():
             
         else:
             pass # PENDING
-
-    def reset_estimators(self):
+    
+    def remove_estimator(self, estimator) -> None:
+        
+        """
+        Removes an estimator based on name or index position.
+        
+        Parameters
+        ----------
+        estimator: str or int,
+            - str: name of estimator listed in `.get_estimators()` to be removed.
+            - int: Index position of estimator listed in `.get_estimators()` to be removed.
+        """
+        assert isinstance(estimator, (str, int)), TypeError(f"estimator must be int or STR, not {type(estimator)}")
+        
+        if isinstance(estimator, str):
+            self.__estimators.pop([model[0] for model in self.__estimators].index(estimator))
+        
+        else:
+            self.__estimators.pop(estimator)    
+    
+    def reset_estimators(self) -> None:
         "Use to reset the estimators to be used to the original list"
         self.__estimators = [
                 ("Logistic Regression", LogisticRegression(random_state = self.random_state, n_jobs = self.n_jobs)),
@@ -144,12 +163,14 @@ class Classification():
                 ("Multilayer perceptron", MLPClassifier(random_state = self.random_state))
             ]
     
-    def get_params(self):
+    def get_params(self)  -> list:
         """Returns a list of tuples containing the estimator and their default parameters"""
         return [(estimator[1], estimator[1].get_params()) for estimator in self.__estimators]   
         
     def pass_params(self, estimator, overwrite = True):
         """
+        Pass custom parameters to an estimator.
+        
         Parameters
         ----------
         estimator: tuple, (estimator, params)
@@ -168,13 +189,16 @@ class Classification():
         
         >>> model.pass_params(estimator = (RandomForestClassifier, {"n_estimators":300, "criterion":"gini"}))
         """
+        
         if not overwrite:
             self.add_estimator((str(type(estimator[0]())), estimator[0](**estimator[1])))
             
         else:
-            pass # PENDING
+            if overwrite and type(estimator[0]()) not in [type(model[1]) for model in self.__estimators]:
+                raise ValueError(f"{estimator[0]()} not in estimator list, if you want to add a new estimator you should use .add_estimator() or set overwrite to False")
+            
+            __ReplacedEstimator = [type(model[1]) for model in self.__estimators].index(type(estimator[0]()))
+            
+            self.__estimators[__ReplacedEstimator] = (self.__estimators[__ReplacedEstimator][0], estimator[0](**estimator[1]))
         
-        
-        
-        
-        
+    def fit()
