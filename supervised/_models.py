@@ -3,6 +3,8 @@
 
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import KFold
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -19,6 +21,7 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 class Classification():
     
@@ -62,7 +65,7 @@ class Classification():
                 ("Random Forest", RandomForestClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
                 ("Linear Support Vector Machine", SVC(random_state = self.random_state, probability = True, kernel = "linear")),
                 ("RBF Support Vector Machine", SVC(random_state = self.random_state, probability = True, kernel = "rbf")),
-                ("K-nearest neighbors", KNeighborsClassifier(n_jobs = self.n_jobs)),
+                ("Knearest neighbors", KNeighborsClassifier(n_jobs = self.n_jobs)),
                 ("Naive Bayes", GaussianNB()),
                 ("Gradient Boosting", GradientBoostingClassifier(random_state = self.random_state)),
                 ("XGBoost", XGBClassifier(random_state = self.random_state, nthread = self.n_jobs)),
@@ -201,4 +204,66 @@ class Classification():
             
             self.__estimators[__ReplacedEstimator] = (self.__estimators[__ReplacedEstimator][0], estimator[0](**estimator[1]))
         
-    def fit()
+    def __CV(self, __stratified, __folds, __params):
+        
+        __validator = StratifiedKFold if __stratified else KFold
+        
+        return __validator(n_splits = __folds, random_state = self.random_state) if __params is None else __validator(**__params)
+    
+    def __init_evaluation_arrays(self):
+        self.accuracy = list()
+        self.precision = list()
+        self.recall = list()
+        self.f1score = list()
+        self.auc_roc = list()
+        self.estimator_name_list = list()
+        self.fold = list()
+         
+    def __evaluate_model(self, estimator, estimator_name, X_train, X_validation, y_train, y_validation):
+        
+        if self.multi_class is None:    
+            # Loading the model
+            model = estimator
+            
+            # Fitting the model
+            model.fit(X_train, y_train)
+                    
+            # Predicting validation fold
+            prediction = model.predict(X_validation)
+            
+            try:
+                proba_prediction = model.predict_proba(X_validation)
+                self.auc_roc.append(roc_auc_score(y_validation, proba_prediction[:,1]))
+            except:
+                self.auc_roc.append(np.nan)
+            
+            # Recording results
+            self.estimator_name_list.append(estimator_name)
+            self.auc_roc.append(roc_auc_score(y_validation, proba_prediction[:,1]))
+            self.accuracy.append(accuracy_score(y_validation, prediction))
+            self.precision.append(precision_score(y_validation, prediction, average = 'binary'))
+            self.recall.append(recall_score(y_validation, prediction, average = 'binary'))
+            self.f1score.append(f1_score(y_validation, prediction, average = 'binary'))
+            
+        else:
+            pass
+                        
+    def fit(self, X, y, CV = 3, CV_Stratified = True, CV_params = None, custom_cross_validation = None) -> None:
+                
+        if CV is None:
+            return "temp" # TODO
+        
+        # Initiation/reseting evaluation arrays
+        self.__init_evaluation_arrays()
+        
+        CROSS_VALIDATION = self.__CV(CV_Stratified, CV, CV_params ) if custom_cross_validation is None else custom_cross_validation
+        
+        for fold, (train_index, validation_index) in enumerate(CROSS_VALIDATION.split(X, y)):
+            X_train, y_train = X.loc[train_index], y.loc[train_index]       
+            X_validation, y_validation = X.loc[validation_index], y.loc[validation_index]                
+            for name, model in self.__estimators:
+                self.__evaluate_model(model, name, X_train, X_validation, y_train, y_validation)
+                self.fold.append(fold + 1)
+                
+                    
+            
