@@ -145,7 +145,8 @@ class Classification():
             self.__estimators.pop(estimator)    
     
     def reset_estimators(self) -> None:
-        "Use to reset the estimators to be used to the original list"
+        "Use to reset the estimators to be used to the original list" 
+        
         self.__estimators = [
                 ("Logistic Regression", LogisticRegression(random_state = self.random_state, n_jobs = self.n_jobs)),
                 ("Decision Tree", DecisionTreeClassifier(random_state = self.random_state)),
@@ -170,7 +171,7 @@ class Classification():
         """Returns a list of tuples containing the estimator and their default parameters"""
         return [(estimator[1], estimator[1].get_params()) for estimator in self.__estimators]   
         
-    def pass_params(self, estimator, overwrite = True):
+    def pass_params(self, estimator, overwrite = True) -> None:
         """
         Pass custom parameters to an estimator.
         
@@ -204,13 +205,20 @@ class Classification():
             
             self.__estimators[__ReplacedEstimator] = (self.__estimators[__ReplacedEstimator][0], estimator[0](**estimator[1]))
         
-    def __CV(self, __stratified, __folds, __params):
+    def __CV(self, __stratified, __folds, __params) -> None:
+        
+        '''
+        Defines the Cross-Validation algorithm to be use by the `.fit()` method.
+        '''
         
         __validator = StratifiedKFold if __stratified else KFold
         
         return __validator(n_splits = __folds, random_state = self.random_state) if __params is None else __validator(**__params)
     
-    def __init_evaluation_arrays(self):
+    def __init_evaluation_arrays(self) -> None:
+        '''
+        Initializes the evaluation holding arrays
+        '''
         self.accuracy = list()
         self.precision = list()
         self.recall = list()
@@ -219,7 +227,11 @@ class Classification():
         self.estimator_name_list = list()
         self.fold = list()
          
-    def __evaluate_model(self, estimator, estimator_name, X_train, X_validation, y_train, y_validation):
+    def __evaluate_model(self, estimator, estimator_name, X_train, X_validation, y_train, y_validation) -> None:
+        
+        '''
+        Trains, predicts then evaluates performance of a model.
+        '''
         
         if self.multi_class is None:    
             # Loading the model
@@ -239,7 +251,6 @@ class Classification():
             
             # Recording results
             self.estimator_name_list.append(estimator_name)
-            self.auc_roc.append(roc_auc_score(y_validation, proba_prediction[:,1]))
             self.accuracy.append(accuracy_score(y_validation, prediction))
             self.precision.append(precision_score(y_validation, prediction, average = 'binary'))
             self.recall.append(recall_score(y_validation, prediction, average = 'binary'))
@@ -247,22 +258,56 @@ class Classification():
             
         else:
             pass
+    
+    def __verbose(self, )
+    
+    
                         
-    def fit(self, X, y, CV = 3, CV_Stratified = True, CV_params = None, custom_cross_validation = None) -> None:
+    def fit(self, X, y, CV = 3, CV_Stratified = True, CV_params = None, verbose = True) -> None:
+        
+        '''
+        Use to train each estimator, make predictions on test data and evaluate the estimator.
+               
+        Parameters
+        ----------
+        X: {array-like, sparse matrix} of shape (n_samples, n_features)
+            The training input samples. Internally, its dtype will be converted to dtype=np.float32. If a sparse matrix is provided, it will be converted into a sparse csc_matrix.
+
+        y: array-like of shape (n_samples,) or (n_samples, n_outputs)
+            The target values (class labels in classification, real numbers in regression).
+        
+        CV: int or None, default = 3
+            Specifies the number of fold's to train each estimator, if set to `None` only one training will be done and evaluate.
+            
+        CV_Stratified: bool, default = True
+            If set to `True` Stratified Cross-validation will be perform, if set to `False` normal KFold will be use.
+            
+        CV_params: dict or None, default = None
+            Use to pass params to the StratifiedKFold or KFold cross-validation.
+            
+        verbose: bool, default = True
+            Verbose status, if set to `True` all transformation verbose will be printed, if set to `False` transformer will be silenced.        
+        '''
+        # Update verbose
+        self.__verbose_status = verbose
+        # Initiation/reseting evaluation arrays
+        self.__init_evaluation_arrays()
                 
         if CV is None:
             return "temp" # TODO
-        
-        # Initiation/reseting evaluation arrays
-        self.__init_evaluation_arrays()
-        
-        CROSS_VALIDATION = self.__CV(CV_Stratified, CV, CV_params ) if custom_cross_validation is None else custom_cross_validation
+              
+        CROSS_VALIDATION = self.__CV(CV_Stratified, CV, CV_params)
         
         for fold, (train_index, validation_index) in enumerate(CROSS_VALIDATION.split(X, y)):
+            
             X_train, y_train = X.loc[train_index], y.loc[train_index]       
+            
             X_validation, y_validation = X.loc[validation_index], y.loc[validation_index]                
+            
             for name, model in self.__estimators:
+            
                 self.__evaluate_model(model, name, X_train, X_validation, y_train, y_validation)
+            
                 self.fold.append(fold + 1)
                 
                     
