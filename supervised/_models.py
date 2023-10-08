@@ -3,6 +3,7 @@
 
 import pandas as pd
 import numpy as np
+import warnings
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import KFold
 from sklearn.linear_model import LogisticRegression
@@ -25,7 +26,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 class Classification():
     
-    def __init__(self, multi_class = None, random_state = None, n_jobs = None, verbose = True) -> None:
+    def __init__(self, multi_class = None, random_state = None, n_jobs = None, ignore_warnings = True) -> None:
         """
         Summarizes variety of Classification Machine Learning models into one instance.
         
@@ -44,21 +45,24 @@ class Classification():
         n_jobs: int, default = None
             The number of jobs to run in parallel. fit, predict, decision_path and apply are all parallelized over the trees.
             None means 1 unless in a joblib.parallel_backend context. -1 means using all processors.
-        
-        verbose: bool, default = True
-            Controls the extralearning verbosity when fitting and predicting. 
-            Note: All estimator verbose are set to 0 or False, meaning no output other than extralearning information.
+                    
+        ignore_warnings: bool, default = True
+            Use to set warnings verbose level, if set to `True` verbose will be ignore, and if set to `False` verbose will be printed.
         """
         
         assert multi_class is None or multi_class in ["ovr", "ovo", "auto"], TypeError(f'multi_class must be str: "ovr", "ovo", "auto" or None, not {type(multi_class)}.')
         assert random_state is None or isinstance(random_state, int), TypeError(f"random_state must be int or None, not {type(random_state)}.")
         assert n_jobs is None or isinstance(n_jobs, int), TypeError(f"n_jobs must be int or None, not {type(n_jobs)}.")
-        assert isinstance(verbose, bool), TypeError(f"verbose must be bool, not {type(verbose)}.")
+        assert isinstance(ignore_warnings, bool), TypeError(f"ignore_warnings must be bool, not {type(ignore_warnings)}.")
+        
+        # Settings
+        if ignore_warnings:
+            warnings.filterwarnings('ignore')
         
         self.multi_class = multi_class
+        self.__pandas = True
         self.random_state = random_state
         self.n_jobs = n_jobs
-        self.verbose = verbose
         self.__estimators = [
                 ("Logistic Regression", LogisticRegression(random_state = self.random_state, n_jobs = self.n_jobs)),
                 ("Decision Tree", DecisionTreeClassifier(random_state = self.random_state)),
@@ -78,7 +82,7 @@ class Classification():
                 ("Gaussian Process", GaussianProcessClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
                 ("Multilayer perceptron", MLPClassifier(random_state = self.random_state))
             ]
-            
+                    
     def return_pandas(self, pandas = True) -> None:
         """
         The default output in the form of a pandas DataFrame or pandas Series, depending of the return.
@@ -259,11 +263,11 @@ class Classification():
         else:
             pass
     
-    def __verbose(self, )
-    
-    
-                        
-    def fit(self, X, y, CV = 3, CV_Stratified = True, CV_params = None, verbose = True) -> None:
+    def __verbose(self, text: str, end = "\n") -> None:
+        if self.__verbose_status:
+            print(text, end = end)  
+                              
+    def fit_train(self, X, y, CV = 3, CV_Stratified = True, CV_params = None, verbose = True) -> None:
         
         '''
         Use to train each estimator, make predictions on test data and evaluate the estimator.
@@ -288,10 +292,17 @@ class Classification():
         verbose: bool, default = True
             Verbose status, if set to `True` all transformation verbose will be printed, if set to `False` transformer will be silenced.        
         '''
+        
+        if not isinstance(X, pd.DataFrame) and not isinstance(y, pd.Series):
+            try:
+                X, y = pd.DataFrame(X), pd.Series(y)
+            except TypeError:
+                print(f"X must be array-like of shape (n_samples, n_features) or pandas.DataFrame and y array-like of shape (n_samples,) or (n_samples, n_outputs)")
+        
         # Update verbose
         self.__verbose_status = verbose
         # Initiation/reseting evaluation arrays
-        self.__init_evaluation_arrays()
+        self.__init_evaluation_arrays() 
                 
         if CV is None:
             return "temp" # TODO
@@ -299,16 +310,31 @@ class Classification():
         CROSS_VALIDATION = self.__CV(CV_Stratified, CV, CV_params)
         
         for fold, (train_index, validation_index) in enumerate(CROSS_VALIDATION.split(X, y)):
-            
+                        
             X_train, y_train = X.loc[train_index], y.loc[train_index]       
             
-            X_validation, y_validation = X.loc[validation_index], y.loc[validation_index]                
+            X_validation, y_validation = X.loc[validation_index], y.loc[validation_index]     
+            
+            self.__verbose(f"Fold {fold + 1}")           
             
             for name, model in self.__estimators:
+                
+                self.__verbose(f"Evaluating {name}", end = " - ")
             
                 self.__evaluate_model(model, name, X_train, X_validation, y_train, y_validation)
+                
+                self.__verbose(f"Completed.")
             
                 self.fold.append(fold + 1)
-                
-                    
-            
+        
+        self.summary = pd.DataFrame({
+            "Model": self.estimator_name_list,
+            "AUC ROC": self.auc_roc,
+            "Accuracy": self.accuracy,
+            "Precision": self.precision,
+            "Recall": self.recall,
+            "F1-Score": self.f1score,
+            "Fold": self.fold})
+        
+        if self.__pandas:
+            return self.summary
