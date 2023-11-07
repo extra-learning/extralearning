@@ -24,79 +24,12 @@ from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
-class Classification():
-    
-    def __init__(self, multi_class = None, random_state = None, n_jobs = None, ignore_warnings = True) -> None:
-        """
-        Summarizes variety of Classification Machine Learning models into one instance.
-        
-        Parameters
-        ----------
-        multi_class: {"ovr", "ovo", "auto"} or None, default = None
-            Categories (unique values) per feature:
-            
-            - None : Indicates that the problem requires a binary classification, and there is no need for multiclass functionality.
-            - "ovr" : Each class is treated as a binary target while the rest are treated as the other class. 
-            - "ovo" : The classifier is trained for each pair of classes to determine the class with the most votes from pairwise comparisons.
-            
-        random_state: int, default = None
-            Controls the seed for generating random numbers, ensuring reproducibility in random processes such as data shuffling or initializations.
-        
-        n_jobs: int, default = None
-            The number of jobs to run in parallel. fit, predict, decision_path and apply are all parallelized over the trees.
-            None means 1 unless in a joblib.parallel_backend context. -1 means using all processors.
-                    
-        ignore_warnings: bool, default = True
-            Use to set warnings verbose level, if set to `True` verbose will be ignore, and if set to `False` verbose will be printed.
-        """
-        
-        assert multi_class is None or multi_class in ["ovr", "ovo", "auto"], TypeError(f'multi_class must be str: "ovr", "ovo", "auto" or None, not {type(multi_class)}.')
-        assert random_state is None or isinstance(random_state, int), TypeError(f"random_state must be int or None, not {type(random_state)}.")
-        assert n_jobs is None or isinstance(n_jobs, int), TypeError(f"n_jobs must be int or None, not {type(n_jobs)}.")
-        assert isinstance(ignore_warnings, bool), TypeError(f"ignore_warnings must be bool, not {type(ignore_warnings)}.")
-        
-        # Settings
-        if ignore_warnings:
-            warnings.filterwarnings('ignore')
-        
+class EstimatorClass:
+
+    def __init__(self, estimators, multi_class = None) -> None:
         self.multi_class = multi_class
-        self.__pandas = True
-        self.random_state = random_state
-        self.n_jobs = n_jobs
-        self.__estimators = [
-                ("Logistic Regression", LogisticRegression(random_state = self.random_state, n_jobs = self.n_jobs)),
-                ("Decision Tree", DecisionTreeClassifier(random_state = self.random_state)),
-                ("Random Forest", RandomForestClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
-                ("Linear Support Vector Machine", SVC(random_state = self.random_state, probability = True, kernel = "linear")),
-                ("RBF Support Vector Machine", SVC(random_state = self.random_state, probability = True, kernel = "rbf")),
-                ("Knearest neighbors", KNeighborsClassifier(n_jobs = self.n_jobs)),
-                ("Naive Bayes", GaussianNB()),
-                ("Gradient Boosting", GradientBoostingClassifier(random_state = self.random_state)),
-                ("XGBoost", XGBClassifier(random_state = self.random_state, nthread = self.n_jobs)),
-                ("LightGBM", LGBMClassifier(random_state = self.random_state, verbose = -1, n_jobs = self.n_jobs)),
-                ("CatBoost", CatBoostClassifier(random_state = self.random_state, verbose = False, thread_count = self.n_jobs)),
-                ("AdaBoost", AdaBoostClassifier(random_state = self.random_state)),
-                ("Linear Discriminant", LinearDiscriminantAnalysis()),
-                ("Quadratic Discriminant", QuadraticDiscriminantAnalysis()),
-                ("Extra Trees", ExtraTreesClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
-                ("Gaussian Process", GaussianProcessClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
-                ("Multilayer perceptron", MLPClassifier(random_state = self.random_state))
-            ]
-                    
-    def return_pandas(self, pandas = True) -> None:
-        """
-        The default output in the form of a pandas DataFrame or pandas Series, depending of the return.
-        
-        Parameters
-        ----------
-        pandas: Bool, default = True
-        """
-        
-        if not isinstance(pandas, bool):
-            raise TypeError(f"Parameter must be Bool, not {type(pandas)}.")
-        
-        self.__pandas = pandas
-   
+        self.__estimators = estimators
+       
     def get_estimators(self) -> list:
         """
         Returns a list of tuples containing the current estimators.
@@ -130,7 +63,6 @@ class Classification():
             pass # PENDING
     
     def remove_estimator(self, estimator) -> None:
-        
         """
         Removes an estimator based on name or index position.
         
@@ -140,38 +72,15 @@ class Classification():
             - str: name of estimator listed in `.get_estimators()` to be removed.
             - int: Index position of estimator listed in `.get_estimators()` to be removed.
         """
-        assert isinstance(estimator, (str, int)), TypeError(f"estimator must be int or STR, not {type(estimator)}")
+        assert isinstance(estimator, (str, int)), TypeError(f"estimator must be int or str, not {type(estimator)}")
         
         if isinstance(estimator, str):
             self.__estimators.pop([model[0] for model in self.__estimators].index(estimator))
         
         else:
             self.__estimators.pop(estimator)    
-    
-    def reset_estimators(self) -> None:
-        "Use to reset the estimators to be used to the original list" 
-        
-        self.__estimators = [
-                ("Logistic Regression", LogisticRegression(random_state = self.random_state, n_jobs = self.n_jobs)),
-                ("Decision Tree", DecisionTreeClassifier(random_state = self.random_state)),
-                ("Random Forest", RandomForestClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
-                ("Linear Support Vector Machine", SVC(random_state = self.random_state, probability = True, kernel = "linear")),
-                ("RBF Support Vector Machine", SVC(random_state = self.random_state, probability = True, kernel = "rbf")),
-                ("K-nearest neighbors", KNeighborsClassifier(n_jobs = self.n_jobs)),
-                ("Naive Bayes", GaussianNB()),
-                ("Gradient Boosting", GradientBoostingClassifier(random_state = self.random_state)),
-                ("XGBoost", XGBClassifier(random_state = self.random_state, nthread = self.n_jobs)),
-                ("LightGBM", LGBMClassifier(random_state = self.random_state, verbose = -1, n_jobs = self.n_jobs)),
-                ("CatBoost", CatBoostClassifier(random_state = self.random_state, verbose = False, thread_count = self.n_jobs)),
-                ("AdaBoost", AdaBoostClassifier(random_state = self.random_state)),
-                ("Linear Discriminant", LinearDiscriminantAnalysis()),
-                ("Quadratic Discriminant", QuadraticDiscriminantAnalysis()),
-                ("Extra Trees", ExtraTreesClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
-                ("Gaussian Process", GaussianProcessClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
-                ("Multilayer perceptron", MLPClassifier(random_state = self.random_state))
-            ]
-    
-    def get_params(self)  -> list:
+     
+    def get_params(self) -> list:
         """Returns a list of tuples containing the estimator and their default parameters"""
         return [(estimator[1], estimator[1].get_params()) for estimator in self.__estimators]   
         
@@ -209,15 +118,88 @@ class Classification():
             
             self.__estimators[__ReplacedEstimator] = (self.__estimators[__ReplacedEstimator][0], estimator[0](**estimator[1]))
         
-    def __CV(self, __stratified, __folds, __params) -> None:
+class Classification(EstimatorClass):
+    
+    def __init__(self, multi_class = None, random_state = None, n_jobs = None, ignore_warnings = True) -> None:
+        """
+        Summarizes variety of Classification Machine Learning models into one instance.
         
-        '''
-        Defines the Cross-Validation algorithm to be use by the `.fit()` method.
-        '''
+        Parameters
+        ----------
+        multi_class: {"ovr", "ovo", "auto"} or None, default = None
+            Categories (unique values) per feature:
+            
+            - None : Indicates that the problem requires a binary classification, and there is no need for multiclass functionality.
+            - "ovr" : Each class is treated as a binary target while the rest are treated as the other class. 
+            - "ovo" : The classifier is trained for each pair of classes to determine the class with the most votes from pairwise comparisons.
+            
+        random_state: int, default = None
+            Controls the seed for generating random numbers, ensuring reproducibility in random processes such as data shuffling or initializations.
         
-        __validator = StratifiedKFold if __stratified else KFold
+        n_jobs: int, default = None
+            The number of jobs to run in parallel. fit, predict, decision_path and apply are all parallelized over the trees.
+            None means 1 unless in a joblib.parallel_backend context. -1 means using all processors.
+                    
+        ignore_warnings: bool, default = True
+            Use to set warnings verbose level, if set to `True` verbose will be ignore, and if set to `False` verbose will be printed.
+        """  
+
+        assert multi_class is None or multi_class in ["ovr", "ovo", "auto"], TypeError(f'multi_class must be str: "ovr", "ovo", "auto" or None, not {type(multi_class)}.')
+        assert random_state is None or isinstance(random_state, int), TypeError(f"random_state must be int or None, not {type(random_state)}.")
+        assert n_jobs is None or isinstance(n_jobs, int), TypeError(f"n_jobs must be int or None, not {type(n_jobs)}.")
+        assert isinstance(ignore_warnings, bool), TypeError(f"ignore_warnings must be bool, not {type(ignore_warnings)}.")
         
-        return __validator(n_splits = __folds, random_state = self.random_state) if __params is None else __validator(**__params)
+        self.multi_class = multi_class
+        self.n_jobs = n_jobs
+        self.random_state = random_state
+        self.__estimators = [
+                ("Logistic Regression", LogisticRegression(random_state = self.random_state, n_jobs = self.n_jobs)),
+                ("Decision Tree", DecisionTreeClassifier(random_state = self.random_state)),
+                ("Random Forest", RandomForestClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
+                ("Linear Support Vector Machine", SVC(random_state = self.random_state, probability = True, kernel = "linear")),
+                ("RBF Support Vector Machine", SVC(random_state = self.random_state, probability = True, kernel = "rbf")),
+                ("Knearest neighbors", KNeighborsClassifier(n_jobs = self.n_jobs)),
+                ("Naive Bayes", GaussianNB()),
+                ("Gradient Boosting", GradientBoostingClassifier(random_state = self.random_state)),
+                ("XGBoost", XGBClassifier(random_state = self.random_state, nthread = self.n_jobs)),
+                ("LightGBM", LGBMClassifier(random_state = self.random_state, verbose = -1, n_jobs = self.n_jobs)),
+                ("CatBoost", CatBoostClassifier(random_state = self.random_state, verbose = False, thread_count = self.n_jobs)),
+                ("AdaBoost", AdaBoostClassifier(random_state = self.random_state)),
+                ("Linear Discriminant", LinearDiscriminantAnalysis()),
+                ("Quadratic Discriminant", QuadraticDiscriminantAnalysis()),
+                ("Extra Trees", ExtraTreesClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
+                ("Gaussian Process", GaussianProcessClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
+                ("Multilayer perceptron", MLPClassifier(random_state = self.random_state))
+            ]        
+        
+        super().__init__(estimators = self.__estimators, multi_class = None)
+
+        # Settings
+        if ignore_warnings:
+            warnings.filterwarnings('ignore')
+                
+    def reset_estimators(self) -> None:
+            "Use to reset the estimators to be used to the original list" 
+            
+            self.__estimators = [
+                    ("Logistic Regression", LogisticRegression(random_state = self.random_state, n_jobs = self.n_jobs)),
+                    ("Decision Tree", DecisionTreeClassifier(random_state = self.random_state)),
+                    ("Random Forest", RandomForestClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
+                    ("Linear Support Vector Machine", SVC(random_state = self.random_state, probability = True, kernel = "linear")),
+                    ("RBF Support Vector Machine", SVC(random_state = self.random_state, probability = True, kernel = "rbf")),
+                    ("K-nearest neighbors", KNeighborsClassifier(n_jobs = self.n_jobs)),
+                    ("Naive Bayes", GaussianNB()),
+                    ("Gradient Boosting", GradientBoostingClassifier(random_state = self.random_state)),
+                    ("XGBoost", XGBClassifier(random_state = self.random_state, nthread = self.n_jobs)),
+                    ("LightGBM", LGBMClassifier(random_state = self.random_state, verbose = -1, n_jobs = self.n_jobs)),
+                    ("CatBoost", CatBoostClassifier(random_state = self.random_state, verbose = False, thread_count = self.n_jobs)),
+                    ("AdaBoost", AdaBoostClassifier(random_state = self.random_state)),
+                    ("Linear Discriminant", LinearDiscriminantAnalysis()),
+                    ("Quadratic Discriminant", QuadraticDiscriminantAnalysis()),
+                    ("Extra Trees", ExtraTreesClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
+                    ("Gaussian Process", GaussianProcessClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
+                    ("Multilayer perceptron", MLPClassifier(random_state = self.random_state))
+                ]
     
     def __init_evaluation_arrays(self) -> None:
         '''
@@ -232,7 +214,6 @@ class Classification():
         self.fold = list()
          
     def __evaluate_model(self, estimator, estimator_name, X_train, X_validation, y_train, y_validation) -> None:
-        
         '''
         Trains, predicts then evaluates performance of a model.
         '''
@@ -266,16 +247,25 @@ class Classification():
     def __verbose(self, text: str, end = "\n") -> None:
         if self.__verbose_status:
             print(text, end = end)  
-                              
-    def fit_train(self, X, y, CV = 3, CV_Stratified = True, CV_params = None, verbose = True) -> None:
+
+    def __CV(self, __stratified, __folds, __params) -> None:
+        '''
+        Defines the Cross-Validation algorithm to be use by the `.fit()` method.
+        '''
         
+        __validator = StratifiedKFold if __stratified else KFold
+        
+        return __validator(n_splits = __folds, random_state = self.random_state) if __params is None else __validator(**__params)
+                              
+    def fit_train(self, X, y, CV = 3, CV_Stratified = True, CV_params = None, verbose = True) -> None:  
         '''
         Use to train each estimator, make predictions on test data and evaluate the estimator.
                
         Parameters
         ----------
         X: {array-like, sparse matrix} of shape (n_samples, n_features)
-            The training input samples. Internally, its dtype will be converted to dtype=np.float32. If a sparse matrix is provided, it will be converted into a sparse csc_matrix.
+            The training input samples. Internally, its dtype will be converted to dtype=np.float32.
+            If a sparse matrix is provided, it will be converted into a sparse csc_matrix.
 
         y: array-like of shape (n_samples,) or (n_samples, n_outputs)
             The target values (class labels in classification, real numbers in regression).
@@ -319,7 +309,7 @@ class Classification():
             
             for name, model in self.__estimators:
                 
-                self.__verbose(f"Evaluating {name}", end = " - ")
+                self.__verbose(f"Trainning: {name}", end = " - ")
             
                 self.__evaluate_model(model, name, X_train, X_validation, y_train, y_validation)
                 
@@ -327,7 +317,7 @@ class Classification():
             
                 self.fold.append(fold + 1)
         
-        self.summary = pd.DataFrame({
+        self.DataFrameSummary = pd.DataFrame({
             "Model": self.estimator_name_list,
             "AUC ROC": self.auc_roc,
             "Accuracy": self.accuracy,
@@ -335,6 +325,9 @@ class Classification():
             "Recall": self.recall,
             "F1-Score": self.f1score,
             "Fold": self.fold})
+                
+    def summary(self, pandas = True):
+        if pandas:
+            return self.DataFrameSummary
         
-        if self.__pandas:
-            return self.summary
+        return self.DataFrameSummary.to_numpy()
