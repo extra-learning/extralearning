@@ -8,29 +8,41 @@ import warnings
 
 # Sklearn metrics
 from sklearn.metrics import (
+    #  Classification Metrics
     accuracy_score,
     precision_score,
     recall_score,
     f1_score,
     roc_auc_score,
+    # Regression Metrics
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score,
+    mean_squared_log_error,
+    explained_variance_score,
 )
 
 # Classification algorithms
 from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
+
+from sklearn.ensemble import (
+    RandomForestClassifier,
+    GradientBoostingClassifier,
+    AdaBoostClassifier,
+    ExtraTreesClassifier,
+)
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
-from sklearn.ensemble import GradientBoostingClassifier
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
 from catboost import CatBoostClassifier
-from sklearn.ensemble import AdaBoostClassifier
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
-from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.discriminant_analysis import (
+    LinearDiscriminantAnalysis,
+    QuadraticDiscriminantAnalysis,
+)
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.neural_network import MLPClassifier
 
@@ -318,13 +330,13 @@ class Classification(EstimatorClass):
             self.f1score.append(f1_score(y_validation, prediction, average="binary"))
 
         else:
-            pass
+            pass  # TODO, MULTICLASS CLASSIFICATION
 
     def __verbose(self, text: str, end="\n") -> None:
         if self.__verbose_status:
             print(text, end=end)
 
-    def __CV(self, __stratified, __folds, __params) -> sklearn.model_selection:
+    def __CV(self, __stratified, __folds, __params) -> StratifiedKFold:
         """
         Defines the Cross-Validation algorithm to be use by the `.fit()` method.
         """
@@ -508,7 +520,7 @@ class Regression(EstimatorClass):
             ("Linear Regression", LinearRegression(n_jobs=self.n_jobs)),
             (
                 "Ridge Regression",
-                Ridge(n_jobs=self.n_jobs, random_state=self.random_state),
+                Ridge(random_state=self.random_state),
             ),
             ("Lasso Regression", Lasso(random_state=self.random_state)),
             ("ElasticNet Regression", ElasticNet(random_state=self.random_state)),
@@ -547,28 +559,46 @@ class Regression(EstimatorClass):
             warnings.filterwarnings("ignore")
 
     def __init_evaluation_arrays(self) -> None:
-        pass
+        self.MAE = list()
+        self.MSE = list()
+        self.RMSE = list()
+        self.R2 = list()
+        self.MSLE = list()
+        self.variance = list()
+        self.estimator_name_list = list()
+        self.fold = list()
 
     def __evaluate_model(
-        self,
+        self, estimator, estimator_name, X_train, X_validation, y_train, y_validation
     ) -> None:
-        pass
+        # Loading the model
+        model = estimator
+
+        # Fitting the model
+        model.fit(X_train, y_train)
+
+        # Predicting
+        prediction = model.predict(X_validation)
+
+        # Recording metrics
+        self.estimator_name_list.append(estimator_name)
+        self.MAE.append(mean_absolute_error(y_validation, prediction))
+        self.MSE.append(mean_squared_error(y_validation, prediction))
+        self.RMSE.append(np.sqrt(mean_squared_error(y_validation, prediction)))
+        self.R2.append(r2_score(y_validation, prediction))
+        self.MSLE.append(mean_squared_log_error(y_validation, prediction))
+        self.variance.append(explained_variance_score(y_validation, prediction))
 
     def __verbose(self, text: str, end="\n") -> None:
         if self.__verbose_status:
             print(text, end=end)
-
-    def __CV(
-        self,
-    ) -> sklearn.model_selection:
-        pass
 
     def reset_estimators(self) -> None:
         self.__estimators = [
             ("Linear Regression", LinearRegression(n_jobs=self.n_jobs)),
             (
                 "Ridge Regression",
-                Ridge(n_jobs=self.n_jobs, random_state=self.random_state),
+                Ridge(random_state=self.random_state),
             ),
             ("Lasso Regression", Lasso(random_state=self.random_state)),
             ("ElasticNet Regression", ElasticNet(random_state=self.random_state)),
@@ -585,7 +615,7 @@ class Regression(EstimatorClass):
             ),
             (
                 "Gradient Boosting Regressor",
-                GradientBoostingRegressor(random_state=random_state),
+                GradientBoostingRegressor(random_state=self.random_state),
             ),
             ("K-KNeighbors Regressor", KNeighborsRegressor(n_jobs=self.n_jobs)),
             ("Huber Regressor", HuberRegressor()),
@@ -600,8 +630,64 @@ class Regression(EstimatorClass):
             ("Bayesian Ridge", BayesianRidge()),
         ]
 
-    def fit_train(self) -> None:
-        pass
+    def fit_train(self, X, y, CV=3, CV_params=None, verbose=True) -> None:
+        if not isinstance(X, pd.DataFrame) and not isinstance(y, pd.Series):
+            try:
+                X, y = pd.DataFrame(X), pd.Series(y)
+            except TypeError:
+                print(
+                    f"X must be array-like of shape (n_samples, n_features) or pandas.DataFrame and y array-like of shape (n_samples,) or (n_samples, n_outputs)"
+                )
+
+        # Update verbose
+        self.__verbose_status = verbose
+        # Initiation/reseting evaluation arrays
+        self.__init_evaluation_arrays()
+
+        if CV is None:
+            return "temp"  # TODO
+
+        CROSS_VALIDATION = (
+            KFold(n_splits=CV, random_state=self.random_state)
+            if CV_params is None
+            else KFold(**CV_params)
+        )
+
+        for fold, (train_index, validation_index) in enumerate(
+            CROSS_VALIDATION.split(X, y)
+        ):
+            X_train, y_train = X.loc[train_index], y.loc[train_index]
+
+            X_validation, y_validation = (
+                X.loc[validation_index],
+                y.loc[validation_index],
+            )
+
+            self.__verbose(f"Fold {fold + 1}")
+
+            for name, model in self.__estimators:
+                self.__verbose(f"Trainning: {name}", end=" - ")
+
+                self.__evaluate_model(
+                    model, name, X_train, X_validation, y_train, y_validation
+                )
+
+                self.__verbose(f"Completed.")
+
+                self.fold.append(fold + 1)
+
+        self.DataFrameSummary = pd.DataFrame(
+            {
+                "Model": self.estimator_name_list,
+                "MAE": self.MAE,
+                "MSE": self.MSE,
+                "RMSE": self.RMSE,
+                "R2-Score": self.R2,
+                "MSLE": self.MSLE,
+                "Explained Variance": self.variance,
+                "Fold": self.fold,
+            }
+        )
 
     def summary(self, pandas=True) -> pd.DataFrame:
         if pandas:
