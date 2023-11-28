@@ -1,1 +1,1 @@
-from .__models import Classification
+from .__models import Classification, Regression

@@ -1,11 +1,25 @@
 # Authors: Liam Arguedas <iliamftw2013@gmail.com>
 # License: BSD 3 clause
 
+# Core frameworks
 import pandas as pd
 import numpy as np
 import warnings
-from sklearn.model_selection import StratifiedKFold
-from sklearn.model_selection import KFold
+
+# Sklearn metrics
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    roc_auc_score
+)
+
+# Classification algorithms
+from sklearn.model_selection import (
+    StratifiedKFold,
+    KFold
+)
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -22,7 +36,26 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+
+# Regression algorithms
+from sklearn.linear_model import (
+    LinearRegression,
+    Ridge,
+    Lasso,
+    ElasticNet,
+    HuberRegressor,
+    TheilSenRegressor,
+    PassiveAggressiveRegressor,
+    BayesianRidge
+)
+from sklearn.svm import SVR
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import (
+    RandomForestRegressor,
+    GradientBoostingRegressor
+)
+from sklearn.neighbors import KNeighborsRegressor
+
 
 class EstimatorClass:
 
@@ -177,29 +210,6 @@ class Classification(EstimatorClass):
         # Settings
         if ignore_warnings:
             warnings.filterwarnings('ignore')
-                
-    def reset_estimators(self) -> None:
-            "Use to reset the estimators to be used to the original list" 
-            
-            self.__estimators = [
-                    ("Logistic Regression", LogisticRegression(random_state = self.random_state, n_jobs = self.n_jobs)),
-                    ("Decision Tree", DecisionTreeClassifier(random_state = self.random_state)),
-                    ("Random Forest", RandomForestClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
-                    ("Linear Support Vector Machine", SVC(random_state = self.random_state, probability = True, kernel = "linear")),
-                    ("RBF Support Vector Machine", SVC(random_state = self.random_state, probability = True, kernel = "rbf")),
-                    ("K-nearest neighbors", KNeighborsClassifier(n_jobs = self.n_jobs)),
-                    ("Naive Bayes", GaussianNB()),
-                    ("Gradient Boosting", GradientBoostingClassifier(random_state = self.random_state)),
-                    ("XGBoost", XGBClassifier(random_state = self.random_state, nthread = self.n_jobs)),
-                    ("LightGBM", LGBMClassifier(random_state = self.random_state, verbose = -1, n_jobs = self.n_jobs)),
-                    ("CatBoost", CatBoostClassifier(random_state = self.random_state, verbose = False, thread_count = self.n_jobs)),
-                    ("AdaBoost", AdaBoostClassifier(random_state = self.random_state)),
-                    ("Linear Discriminant", LinearDiscriminantAnalysis()),
-                    ("Quadratic Discriminant", QuadraticDiscriminantAnalysis()),
-                    ("Extra Trees", ExtraTreesClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
-                    ("Gaussian Process", GaussianProcessClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
-                    ("Multilayer perceptron", MLPClassifier(random_state = self.random_state))
-                ]
     
     def __init_evaluation_arrays(self) -> None:
         '''
@@ -248,7 +258,7 @@ class Classification(EstimatorClass):
         if self.__verbose_status:
             print(text, end = end)  
 
-    def __CV(self, __stratified, __folds, __params) -> None:
+    def __CV(self, __stratified, __folds, __params) -> sklearn.model_selection:
         '''
         Defines the Cross-Validation algorithm to be use by the `.fit()` method.
         '''
@@ -256,6 +266,29 @@ class Classification(EstimatorClass):
         __validator = StratifiedKFold if __stratified else KFold
         
         return __validator(n_splits = __folds, random_state = self.random_state) if __params is None else __validator(**__params)
+    
+    def reset_estimators(self) -> None:
+                "Use to reset the estimators to be used to the original list" 
+                
+                self.__estimators = [
+                        ("Logistic Regression", LogisticRegression(random_state = self.random_state, n_jobs = self.n_jobs)),
+                        ("Decision Tree", DecisionTreeClassifier(random_state = self.random_state)),
+                        ("Random Forest", RandomForestClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
+                        ("Linear Support Vector Machine", SVC(random_state = self.random_state, probability = True, kernel = "linear")),
+                        ("RBF Support Vector Machine", SVC(random_state = self.random_state, probability = True, kernel = "rbf")),
+                        ("K-nearest neighbors", KNeighborsClassifier(n_jobs = self.n_jobs)),
+                        ("Naive Bayes", GaussianNB()),
+                        ("Gradient Boosting", GradientBoostingClassifier(random_state = self.random_state)),
+                        ("XGBoost", XGBClassifier(random_state = self.random_state, nthread = self.n_jobs)),
+                        ("LightGBM", LGBMClassifier(random_state = self.random_state, verbose = -1, n_jobs = self.n_jobs)),
+                        ("CatBoost", CatBoostClassifier(random_state = self.random_state, verbose = False, thread_count = self.n_jobs)),
+                        ("AdaBoost", AdaBoostClassifier(random_state = self.random_state)),
+                        ("Linear Discriminant", LinearDiscriminantAnalysis()),
+                        ("Quadratic Discriminant", QuadraticDiscriminantAnalysis()),
+                        ("Extra Trees", ExtraTreesClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
+                        ("Gaussian Process", GaussianProcessClassifier(random_state = self.random_state, n_jobs = self.n_jobs)),
+                        ("Multilayer perceptron", MLPClassifier(random_state = self.random_state))
+                    ]
                               
     def fit_train(self, X, y, CV = 3, CV_Stratified = True, CV_params = None, verbose = True) -> None:  
         '''
@@ -326,7 +359,79 @@ class Classification(EstimatorClass):
             "F1-Score": self.f1score,
             "Fold": self.fold})
                 
-    def summary(self, pandas = True):
+    def summary(self, pandas = True) -> pd.DataFrame:
+        if pandas:
+            return self.DataFrameSummary
+        
+        return self.DataFrameSummary.to_numpy()
+    
+class Regression(EstimatorClass):
+    
+    def __init__(self, random_state = None, n_jobs = None, ignore_warnings = True) -> None:
+
+        assert random_state is None or isinstance(random_state, int), TypeError(f"random_state must be int or None, not {type(random_state)}.")
+        assert n_jobs is None or isinstance(n_jobs, int), TypeError(f"n_jobs must be int or None, not {type(n_jobs)}.")
+        assert isinstance(ignore_warnings, bool), TypeError(f"ignore_warnings must be bool, not {type(ignore_warnings)}.")
+        
+        self.n_jobs = n_jobs
+        self.random_state = random_state
+        self.__estimators = [
+            ("Linear Regression", LinearRegression(n_jobs = self.n_jobs)),
+            ("Ridge Regression", Ridge(n_jobs = self.n_jobs, random_state = self.random_state)),
+            ("Lasso Regression", Lasso(random_state = self.random_state)),
+            ("ElasticNet Regression", ElasticNet(random_state = self.random_state)),
+            ("Support Vector Regression", SVR()),
+            ("Decision Tree Regressor", DecisionTreeRegressor(random_state = self.random_state)),
+            ("Random Forest Regressor", RandomForestRegressor(n_jobs = self.n_jobs, random_state = self.random_state)),
+            ("Gradient Boosting Regressor", GradientBoostingRegressor(random_state = random_state)),
+            ("K-KNeighbors Regressor", KNeighborsRegressor(n_jobs = self.n_jobs)),
+            ("Huber Regressor", HuberRegressor()),
+            ("Theil-Sen Regressor", TheilSenRegressor(n_jobs = self.n_jobs, random_state = self.random_state)),
+            ("Passive Aggressive Regressor", PassiveAggressiveRegressor(random_state = self.random_state)),
+            ("Bayesian Ridge", BayesianRidge())
+        ]
+
+        super().__init__(estimators = self.__estimators)
+
+        # Settings
+        if ignore_warnings:
+            warnings.filterwarnings("ignore")
+
+    def __init_evaluation_arrays(self) -> None:
+        pass
+
+    def __evaluate_model(self, ) -> None:
+        pass
+
+    def __verbose(self, text: str, end = "\n") -> None:
+        if self.__verbose_status:
+            print(text, end = end)  
+
+    def __CV(self, ) -> sklearn.model_selection:
+        pass
+
+    def reset_estimators(self) -> None:
+
+        self.__estimators = [
+            ("Linear Regression", LinearRegression(n_jobs = self.n_jobs)),
+            ("Ridge Regression", Ridge(n_jobs = self.n_jobs, random_state = self.random_state)),
+            ("Lasso Regression", Lasso(random_state = self.random_state)),
+            ("ElasticNet Regression", ElasticNet(random_state = self.random_state)),
+            ("Support Vector Regression", SVR()),
+            ("Decision Tree Regressor", DecisionTreeRegressor(random_state = self.random_state)),
+            ("Random Forest Regressor", RandomForestRegressor(n_jobs = self.n_jobs, random_state = self.random_state)),
+            ("Gradient Boosting Regressor", GradientBoostingRegressor(random_state = random_state)),
+            ("K-KNeighbors Regressor", KNeighborsRegressor(n_jobs = self.n_jobs)),
+            ("Huber Regressor", HuberRegressor()),
+            ("Theil-Sen Regressor", TheilSenRegressor(n_jobs = self.n_jobs, random_state = self.random_state)),
+            ("Passive Aggressive Regressor", PassiveAggressiveRegressor(random_state = self.random_state)),
+            ("Bayesian Ridge", BayesianRidge())
+        ]
+
+    def fit_train(self) -> None:
+        pass
+
+    def summary(self, pandas = True) -> pd.DataFrame:
         if pandas:
             return self.DataFrameSummary
         
