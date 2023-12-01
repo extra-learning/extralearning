@@ -22,8 +22,10 @@ from sklearn.metrics import (
     explained_variance_score,
 )
 
+# Sklearn Model Selection
+from sklearn.model_selection import StratifiedKFold, KFold, train_test_split
+
 # Classification algorithms
-from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 
@@ -64,8 +66,7 @@ from sklearn.neighbors import KNeighborsRegressor
 
 
 class EstimatorClass:
-    def __init__(self, estimators, multi_class=None) -> None:
-        self.multi_class = multi_class
+    def __init__(self, estimators) -> None:
         self.__estimators = estimators
 
     def get_estimators(self) -> list:
@@ -94,11 +95,11 @@ class EstimatorClass:
         Note: To check the default estimators, you can use the `.get_estimators()` method.
         """
 
-        if self.multi_class is None:
-            self.__estimators.append(estimator)
+        assert isinstance(estimator, tuple), TypeError(
+            "`estimator` takes a tuple as argument with format (name, estimator)"
+        )
 
-        else:
-            pass  # PENDING
+        self.__estimators.append(estimator)
 
     def remove_estimator(self, estimator) -> None:
         """
@@ -175,21 +176,12 @@ class EstimatorClass:
 
 
 class Classification(EstimatorClass):
-    def __init__(
-        self, multi_class=None, random_state=None, n_jobs=None, ignore_warnings=True
-    ) -> None:
+    def __init__(self, random_state=None, n_jobs=None, ignore_warnings=True) -> None:
         """
         Summarizes variety of Classification Machine Learning models into one instance.
 
         Parameters
         ----------
-        multi_class: {"ovr", "ovo", "auto"} or None, default = None
-            Categories (unique values) per feature:
-
-            - None : Indicates that the problem requires a binary classification, and there is no need for multiclass functionality.
-            - "ovr" : Each class is treated as a binary target while the rest are treated as the other class.
-            - "ovo" : The classifier is trained for each pair of classes to determine the class with the most votes from pairwise comparisons.
-
         random_state: int, default = None
             Controls the seed for generating random numbers, ensuring reproducibility in random processes such as data shuffling or initializations.
 
@@ -201,9 +193,6 @@ class Classification(EstimatorClass):
             Use to set warnings verbose level, if set to `True` verbose will be ignore, and if set to `False` verbose will be printed.
         """
 
-        assert multi_class is None or multi_class in ["ovr", "ovo", "auto"], TypeError(
-            f'multi_class must be str: "ovr", "ovo", "auto" or None, not {type(multi_class)}.'
-        )
         assert random_state is None or isinstance(random_state, int), TypeError(
             f"random_state must be int or None, not {type(random_state)}."
         )
@@ -214,7 +203,6 @@ class Classification(EstimatorClass):
             f"ignore_warnings must be bool, not {type(ignore_warnings)}."
         )
 
-        self.multi_class = multi_class
         self.n_jobs = n_jobs
         self.random_state = random_state
         self.__estimators = [
@@ -279,7 +267,7 @@ class Classification(EstimatorClass):
             ("Multilayer perceptron", MLPClassifier(random_state=self.random_state)),
         ]
 
-        super().__init__(estimators=self.__estimators, multi_class=None)
+        super().__init__(estimators=self.__estimators)
 
         # Settings
         if ignore_warnings:
@@ -304,33 +292,36 @@ class Classification(EstimatorClass):
         Trains, predicts then evaluates performance of a model.
         """
 
-        if self.multi_class is None:
-            # Loading the model
-            model = estimator
+        # Loading the model
+        model = estimator
 
-            # Fitting the model
-            model.fit(X_train, y_train)
+        # Fitting the model
+        model.fit(X_train.values, y_train.values)
 
-            # Predicting validation fold
-            prediction = model.predict(X_validation)
+        # Predicting validation fold
+        prediction = model.predict(X_validation)
 
-            try:
-                proba_prediction = model.predict_proba(X_validation)
-                self.auc_roc.append(roc_auc_score(y_validation, proba_prediction[:, 1]))
-            except:
-                self.auc_roc.append(np.nan)
-
-            # Recording results
-            self.estimator_name_list.append(estimator_name)
-            self.accuracy.append(accuracy_score(y_validation, prediction))
-            self.precision.append(
-                precision_score(y_validation, prediction, average="binary")
+        try:
+            proba_prediction = model.predict_proba(X_validation)
+            self.auc_roc.append(
+                roc_auc_score(
+                    y_validation,
+                    proba_prediction[:, 1] if self.__labels < 3 else proba_prediction,
+                    multi_class="ovr" if self.__labels > 2 else "raise",
+                    average="micro" if self.__labels > 2 else "weighted",
+                )
             )
-            self.recall.append(recall_score(y_validation, prediction, average="binary"))
-            self.f1score.append(f1_score(y_validation, prediction, average="binary"))
+        except:
+            self.auc_roc.append(np.nan)
 
-        else:
-            pass  # TODO, MULTICLASS CLASSIFICATION
+        # Recording results
+        self.estimator_name_list.append(estimator_name)
+        self.accuracy.append(accuracy_score(y_validation, prediction))
+        self.precision.append(
+            precision_score(y_validation, prediction, average="weighted")
+        )
+        self.recall.append(recall_score(y_validation, prediction, average="weighted"))
+        self.f1score.append(f1_score(y_validation, prediction, average="weighted"))
 
     def __verbose(self, text: str, end="\n") -> None:
         if self.__verbose_status:
@@ -415,7 +406,13 @@ class Classification(EstimatorClass):
         ]
 
     def fit_train(
-        self, X, y, CV=3, CV_Stratified=True, CV_params=None, verbose=True
+        self,
+        X,
+        y,
+        CV=3,
+        CV_Stratified=True,
+        CV_params=None,
+        verbose=True,
     ) -> None:
         """
         Use to train each estimator, make predictions on test data and evaluate the estimator.
@@ -452,36 +449,55 @@ class Classification(EstimatorClass):
 
         # Update verbose
         self.__verbose_status = verbose
+
         # Initiation/reseting evaluation arrays
         self.__init_evaluation_arrays()
 
+        # labels
+        self.__labels = y.nunique()
+
         if CV is None:
-            return "temp"  # TODO
-
-        CROSS_VALIDATION = self.__CV(CV_Stratified, CV, CV_params)
-
-        for fold, (train_index, validation_index) in enumerate(
-            CROSS_VALIDATION.split(X, y)
-        ):
-            X_train, y_train = X.loc[train_index], y.loc[train_index]
-
-            X_validation, y_validation = (
-                X.loc[validation_index],
-                y.loc[validation_index],
-            )
-
-            self.__verbose(f"Fold {fold + 1}")
-
             for name, model in self.__estimators:
-                self.__verbose(f"Trainning: {name}", end=" - ")
+                X_train, X_validation, y_train, y_validation = train_test_split(
+                    X, y, random_state=self.random_state
+                )
 
+                self.__verbose(f"Trainning: {name}", end=" - ")
                 self.__evaluate_model(
                     model, name, X_train, X_validation, y_train, y_validation
                 )
-
                 self.__verbose(f"Completed.")
 
-                self.fold.append(fold + 1)
+        else:
+            CROSS_VALIDATION = self.__CV(CV_Stratified, CV, CV_params)
+
+            for fold, (train_index, validation_index) in enumerate(
+                CROSS_VALIDATION.split(X, y)
+            ):
+                X_train, y_train = X.loc[train_index], y.loc[train_index]
+
+                X_validation, y_validation = (
+                    X.loc[validation_index],
+                    y.loc[validation_index],
+                )
+
+                self.__verbose(f"Fold {fold + 1}")
+
+                for name, model in self.__estimators:
+                    self.__verbose(f"Trainning: {name}", end=" - ")
+
+                    self.__evaluate_model(
+                        model,
+                        name,
+                        X_train,
+                        X_validation,
+                        y_train,
+                        y_validation,
+                    )
+
+                    self.__verbose(f"Completed.")
+
+                    self.fold.append(fold + 1)
 
         self.DataFrameSummary = pd.DataFrame(
             {
@@ -491,14 +507,13 @@ class Classification(EstimatorClass):
                 "Precision": self.precision,
                 "Recall": self.recall,
                 "F1-Score": self.f1score,
-                "Fold": self.fold,
+                "Fold": 1 if CV is None else self.fold,
             }
         )
 
     def summary(self, pandas=True) -> pd.DataFrame:
         if pandas:
             return self.DataFrameSummary
-
         return self.DataFrameSummary.to_numpy()
 
 
@@ -645,36 +660,46 @@ class Regression(EstimatorClass):
         self.__init_evaluation_arrays()
 
         if CV is None:
-            return "temp"  # TODO
-
-        CROSS_VALIDATION = (
-            KFold(n_splits=CV, random_state=self.random_state)
-            if CV_params is None
-            else KFold(**CV_params)
-        )
-
-        for fold, (train_index, validation_index) in enumerate(
-            CROSS_VALIDATION.split(X, y)
-        ):
-            X_train, y_train = X.loc[train_index], y.loc[train_index]
-
-            X_validation, y_validation = (
-                X.loc[validation_index],
-                y.loc[validation_index],
-            )
-
-            self.__verbose(f"Fold {fold + 1}")
-
             for name, model in self.__estimators:
-                self.__verbose(f"Trainning: {name}", end=" - ")
+                X_train, X_validation, y_train, y_validation = train_test_split(
+                    X, y, random_state=self.random_state
+                )
 
+                self.__verbose(f"Trainning: {name}", end=" - ")
                 self.__evaluate_model(
                     model, name, X_train, X_validation, y_train, y_validation
                 )
-
                 self.__verbose(f"Completed.")
 
-                self.fold.append(fold + 1)
+        else:
+            CROSS_VALIDATION = (
+                KFold(n_splits=CV, random_state=self.random_state)
+                if CV_params is None
+                else KFold(**CV_params)
+            )
+
+            for fold, (train_index, validation_index) in enumerate(
+                CROSS_VALIDATION.split(X, y)
+            ):
+                X_train, y_train = X.loc[train_index], y.loc[train_index]
+
+                X_validation, y_validation = (
+                    X.loc[validation_index],
+                    y.loc[validation_index],
+                )
+
+                self.__verbose(f"Fold {fold + 1}")
+
+                for name, model in self.__estimators:
+                    self.__verbose(f"Trainning: {name}", end=" - ")
+
+                    self.__evaluate_model(
+                        model, name, X_train, X_validation, y_train, y_validation
+                    )
+
+                    self.__verbose(f"Completed.")
+
+                    self.fold.append(fold + 1)
 
         self.DataFrameSummary = pd.DataFrame(
             {
@@ -685,7 +710,7 @@ class Regression(EstimatorClass):
                 "R2-Score": self.R2,
                 "MSLE": self.MSLE,
                 "Explained Variance": self.variance,
-                "Fold": self.fold,
+                "Fold": 1 if CV is None else self.fold,
             }
         )
 
