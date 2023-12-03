@@ -174,6 +174,7 @@ class EstimatorClass:
                 estimator[0](**estimator[1]),
             )
 
+
 class Classification(EstimatorClass):
     def __init__(self, random_state=None, n_jobs=None, ignore_warnings=True) -> None:
         """
@@ -516,6 +517,7 @@ class Classification(EstimatorClass):
         if pandas:
             return self.DataFrameSummary
         return self.DataFrameSummary.to_numpy()
+
 
 class Regression(EstimatorClass):
     def __init__(self, random_state=None, n_jobs=None, ignore_warnings=True) -> None:
