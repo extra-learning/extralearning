@@ -174,7 +174,6 @@ class EstimatorClass:
                 estimator[0](**estimator[1]),
             )
 
-
 class Classification(EstimatorClass):
     def __init__(self, random_state=None, n_jobs=None, ignore_warnings=True) -> None:
         """
@@ -457,16 +456,18 @@ class Classification(EstimatorClass):
         self.__labels = y.nunique()
 
         if CV is None:
+            self.__verbose("")
+            self.__verbose("Trainning:")
+            self.__verbose("")
             for name, model in self.__estimators:
                 X_train, X_validation, y_train, y_validation = train_test_split(
                     X, y, random_state=self.random_state
                 )
 
-                self.__verbose(f"Trainning: {name}", end=" - ")
+                self.__verbose(f"- {name}")
                 self.__evaluate_model(
                     model, name, X_train, X_validation, y_train, y_validation
                 )
-                self.__verbose(f"Completed.")
 
         else:
             CROSS_VALIDATION = self.__CV(CV_Stratified, CV, CV_params)
@@ -481,10 +482,12 @@ class Classification(EstimatorClass):
                     y.loc[validation_index],
                 )
 
-                self.__verbose(f"Fold {fold + 1}")
+                self.__verbose("")
+                self.__verbose(f"Trainning: Fold {fold + 1}")
+                self.__verbose("")
 
                 for name, model in self.__estimators:
-                    self.__verbose(f"Trainning: {name}", end=" - ")
+                    self.__verbose(f"- {name}")
 
                     self.__evaluate_model(
                         model,
@@ -494,8 +497,6 @@ class Classification(EstimatorClass):
                         y_train,
                         y_validation,
                     )
-
-                    self.__verbose(f"Completed.")
 
                     self.fold.append(fold + 1)
 
@@ -515,7 +516,6 @@ class Classification(EstimatorClass):
         if pandas:
             return self.DataFrameSummary
         return self.DataFrameSummary.to_numpy()
-
 
 class Regression(EstimatorClass):
     def __init__(self, random_state=None, n_jobs=None, ignore_warnings=True) -> None:
@@ -660,16 +660,19 @@ class Regression(EstimatorClass):
         self.__init_evaluation_arrays()
 
         if CV is None:
+            self.__verbose("")
+            self.__verbose("Trainning:")
+            self.__verbose("")
+
             for name, model in self.__estimators:
                 X_train, X_validation, y_train, y_validation = train_test_split(
                     X, y, random_state=self.random_state
                 )
 
-                self.__verbose(f"Trainning: {name}", end=" - ")
+                self.__verbose(f"- {name}")
                 self.__evaluate_model(
                     model, name, X_train, X_validation, y_train, y_validation
                 )
-                self.__verbose(f"Completed.")
 
         else:
             CROSS_VALIDATION = (
@@ -688,16 +691,16 @@ class Regression(EstimatorClass):
                     y.loc[validation_index],
                 )
 
-                self.__verbose(f"Fold {fold + 1}")
+                self.__verbose("")
+                self.__verbose(f"Trainning: Fold {fold + 1}")
+                self.__verbose("")
 
                 for name, model in self.__estimators:
-                    self.__verbose(f"Trainning: {name}", end=" - ")
+                    self.__verbose(f"- {name}")
 
                     self.__evaluate_model(
                         model, name, X_train, X_validation, y_train, y_validation
                     )
-
-                    self.__verbose(f"Completed.")
 
                     self.fold.append(fold + 1)
 
