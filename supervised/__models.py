@@ -335,7 +335,7 @@ class Classification(EstimatorClass):
         __validator = StratifiedKFold if __stratified else KFold
 
         return (
-            __validator(n_splits=__folds, random_state=self.random_state)
+            __validator(n_splits=__folds, random_state=self.random_state, shuffle=True)
             if __params is None
             else __validator(**__params)
         )
