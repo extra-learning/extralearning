@@ -67,11 +67,29 @@ from sklearn.neighbors import KNeighborsRegressor
 
 class EstimatorClass:
     def __init__(self, estimators) -> None:
+        """
+        Base EstimatorClass for supervised learning.
+
+        Allows the user to have the same estimator interaction with both Regression and Classification classes.
+
+        Note: Should not be accessed by the user since its a parent class.
+        """
+
         self.__estimators = estimators
 
     def get_estimators(self) -> list:
         """
-        Returns a list of tuples containing the current estimators.
+        Returns a list of tuples containing the current estimators with format (name, estimator).
+
+        Examples
+        --------
+        >>> from extralearning import Classification
+        >>> from sklearn.ensemble import RandomForestClassifier
+
+        >>> model = Classification()
+
+        >>> model.get_estimators()[0]
+        ("Random Forest", RandomForestClassifier()))
         """
         return self.__estimators
 
@@ -92,7 +110,8 @@ class EstimatorClass:
 
         >>> model.add_estimator(estimator = ("Random Forest", RandomForestClassifier()))
 
-        Note: To check the default estimators, you can use the `.get_estimators()` method.
+        Note 1: To check the default estimators, you can use the `.get_estimators()` method.
+        Note 2: If you want to pass parameters to an existing estimator you can use `.pass_params()`
         """
 
         assert isinstance(estimator, tuple), TypeError(
@@ -103,13 +122,24 @@ class EstimatorClass:
 
     def remove_estimator(self, estimator) -> None:
         """
-        Removes an estimator based on name or index position.
+        Removes an estimator based on name or index position from the list to `.fit_train()`.
 
         Parameters
         ----------
         estimator: str or int,
             - str: name of estimator listed in `.get_estimators()` to be removed.
             - int: Index position of estimator listed in `.get_estimators()` to be removed.
+
+        Examples
+        --------
+        >>> from extralearning import Classification
+        >>> from sklearn.ensemble import RandomForestClassifier
+
+        >>> model = Classification()
+
+        >>> model.remove_estimator(estimator = "Random Forest")
+        >>> model.remove_estimator(estimator = 5)
+
         """
         assert isinstance(estimator, (str, int)), TypeError(
             f"estimator must be int or str, not {type(estimator)}"
@@ -124,14 +154,41 @@ class EstimatorClass:
             self.__estimators.pop(estimator)
 
     def get_params(self) -> list:
-        """Returns a list of tuples containing the estimator and their default parameters"""
+        """
+        Returns a list of tuples containing the estimator and their default parameters
+
+        Examples
+        --------
+        >>> from extralearning import Classification
+        >>> from sklearn.ensemble import RandomForestClassifier
+
+        >>> model = Classification()
+
+        >>> model.get_params()[0]
+        (LogisticRegression(),
+        {'C': 1.0,
+        'class_weight': None,
+        'dual': False,
+        'fit_intercept': True,
+        'intercept_scaling': 1,
+        'l1_ratio': None,
+        'max_iter': 100,
+        'multi_class': 'auto',
+        'n_jobs': None,
+        'penalty': 'l2',
+        'random_state': None,
+        'solver': 'lbfgs',
+        'tol': 0.0001,
+        'verbose': 0,
+        'warm_start': False})
+        """
         return [
             (estimator[1], estimator[1].get_params()) for estimator in self.__estimators
         ]
 
     def pass_params(self, estimator, overwrite=True) -> None:
         """
-        Pass custom parameters to an estimator.
+        Pass custom parameters to an estimator listed in `.get_estimators()`
 
         Parameters
         ----------
@@ -191,6 +248,12 @@ class Classification(EstimatorClass):
 
         ignore_warnings: bool, default = True
             Use to set warnings verbose level, if set to `True` verbose will be ignore, and if set to `False` verbose will be printed.
+
+        Examples
+        --------
+        >>> from extralearning import Classification
+
+        >>> model = Classification(random_state=None, n_jobs=None, ignore_warnings=True)
         """
 
         assert random_state is None or isinstance(random_state, int), TypeError(
@@ -341,7 +404,21 @@ class Classification(EstimatorClass):
         )
 
     def reset_estimators(self) -> None:
-        "Use to reset the estimators to be used to the original list"
+        """
+        Use to reset the estimators to be used to the original list
+
+        Examples
+        --------
+        >>> from extralearning import Classification
+
+        >>> model = Classification()
+
+        >>> model.remove_estimator(estimator = "Random Forest")
+        >>> model.remove_estimator(estimator = 5)
+
+        >>> model.reset_estimators()
+
+        """
 
         self.__estimators = [
             (
