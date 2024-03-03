@@ -755,7 +755,7 @@ class Regression(EstimatorClass):
 
         else:
             CROSS_VALIDATION = (
-                KFold(n_splits=CV, random_state=self.random_state)
+                KFold(n_splits=CV, random_state=self.random_state, shuffle=True)
                 if CV_params is None
                 else KFold(**CV_params)
             )
