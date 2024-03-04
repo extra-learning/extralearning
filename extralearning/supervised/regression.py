@@ -138,7 +138,7 @@ class Regression(EstimatorClass, SummaryClass):
         """
         Trains, predicts then evaluates performance of a model.
         """
-        
+
         # Loading the model
         model = estimator
 
@@ -246,7 +246,7 @@ class Regression(EstimatorClass, SummaryClass):
 
             try:
                 X, y = pd.DataFrame(X), pd.Series(y)
-                
+
             except TypeError:
                 print(
                     f"X must be array-like of shape (n_samples, n_features) or pandas.DataFrame and y array-like of shape (n_samples,) or (n_samples, n_outputs)"
@@ -313,5 +313,6 @@ class Regression(EstimatorClass, SummaryClass):
                 "MSLE": self.MSLE,
                 "Explained Variance": self.variance,
                 "Fold": 1 if CV is None else self.fold,
-            }, estimator_type = "regression"
+            },
+            estimator_type="regression",
         )

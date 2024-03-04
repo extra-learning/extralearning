@@ -12,24 +12,25 @@ class SummaryClass:
         """
 
         assert isinstance(frame, dict), TypeError("frame should be dict type")
-        assert estimator_type in ["classification", "regression"], ValueError("estimator_type needs to be classification or regression for supervised learning")
-       
-       
+        assert estimator_type in ["classification", "regression"], ValueError(
+            "estimator_type needs to be classification or regression for supervised learning"
+        )
+
         self.DataFrameSummary = pd.DataFrame(frame)
         self.estimator = estimator_type
-        self.default_metric = ("MSE" if self.estimator == "regression" else "Accuracy")
+        self.default_metric = "MSE" if self.estimator == "regression" else "Accuracy"
 
     def summary(self, pandas=True):
         """
         Generate a summary of the data stored in the object.
 
         Parameters:
-        - pandas (bool, optional): If True, returns the summary as a Pandas DataFrame. 
+        - pandas (bool, optional): If True, returns the summary as a Pandas DataFrame.
         If False, returns the summary as a NumPy array. Default is True.
 
         Returns:
-        - pandas.DataFrame or numpy.ndarray: Summary of the data. If pandas is True, 
-        the summary is returned as a Pandas DataFrame; otherwise, it is returned 
+        - pandas.DataFrame or numpy.ndarray: Summary of the data. If pandas is True,
+        the summary is returned as a Pandas DataFrame; otherwise, it is returned
         as a NumPy array.
 
         Note:
@@ -42,14 +43,14 @@ class SummaryClass:
         >>> model = Classification()
         >>> model.fit_train(X, y)
 
-        >>> model.summary()   
+        >>> model.summary()
         """
 
         if pandas:
             return self.DataFrameSummary
 
         return self.DataFrameSummary.to_numpy()
-    
+
     def fold_summary(self):
         """
         Calculate the mean summary of data grouped by 'Fold' and 'Model'.
@@ -67,20 +68,20 @@ class SummaryClass:
         >>> model.fold_summary()
         """
 
-        return self.DataFrameSummary.groupby(["Fold","Model"]).mean()
+        return self.DataFrameSummary.groupby(["Fold", "Model"]).mean()
 
     def best(self, metric=None, pandas=True):
         """
         Retrieve the best-performing data entry based on the specified metric.
 
         Parameters:
-        - metric (str, optional): The metric by which to determine the best-performing entry. 
+        - metric (str, optional): The metric by which to determine the best-performing entry.
         If not provided, the default metric specified in the object will be used.
-        - pandas (bool, optional): If True, returns the result as a Pandas DataFrame with the 
+        - pandas (bool, optional): If True, returns the result as a Pandas DataFrame with the
         single best entry. If False, returns the result as a NumPy array. Default is True.
 
         Returns:
-        - pandas.DataFrame or numpy.ndarray: The best-performing data entry based on the specified 
+        - pandas.DataFrame or numpy.ndarray: The best-performing data entry based on the specified
         metric, either as a Pandas DataFrame or a NumPy array.
 
         Examples
@@ -94,9 +95,21 @@ class SummaryClass:
         """
 
         if pandas:
-            return self.DataFrameSummary.sort_values(by=self.default_metric if metric is None else metric, ascending=False).head(1)
+            return (
+                self.DataFrameSummary.groupby("Model")
+                .mean()
+                .sort_values(
+                    by=self.default_metric if metric is None else metric,
+                    ascending=False,
+                )
+                .head(1)
+            )
         return (
-            self.DataFrameSummary.sort_values(by=self.default_metric if metric is None else metric, ascending=False)
+            self.DataFrameSummary.groupby("Model")
+            .mean()
+            .sort_values(
+                by=self.default_metric if metric is None else metric, ascending=False
+            )
             .bottom(1)
             .to_numpy()
         )
@@ -107,13 +120,13 @@ class SummaryClass:
 
         Parameters:
         - n (int, optional): The number of top entries to retrieve. Default is 5.
-        - metric (str, optional): The metric by which to determine the top entries. 
+        - metric (str, optional): The metric by which to determine the top entries.
         If not provided, the default metric specified in the object will be used.
-        - pandas (bool, optional): If True, returns the result as a Pandas DataFrame with 
+        - pandas (bool, optional): If True, returns the result as a Pandas DataFrame with
         the top N entries. If False, returns the result as a NumPy array. Default is True.
 
         Returns:
-        - pandas.DataFrame or numpy.ndarray: The top N data entries based on the specified 
+        - pandas.DataFrame or numpy.ndarray: The top N data entries based on the specified
         metric, either as a Pandas DataFrame or a NumPy array.
 
         Examples
@@ -127,9 +140,13 @@ class SummaryClass:
         """
 
         if pandas:
-            return self.DataFrameSummary.sort_values(by=self.default_metric if metric is None else metric, ascending=False).head(n)
+            return self.DataFrameSummary.sort_values(
+                by=self.default_metric if metric is None else metric, ascending=False
+            ).head(n)
         return (
-            self.DataFrameSummary.sort_values(by=self.default_metric if metric is None else metric, ascending=False)
+            self.DataFrameSummary.sort_values(
+                by=self.default_metric if metric is None else metric, ascending=False
+            )
             .head(n)
             .to_numpy()
         )
@@ -140,13 +157,13 @@ class SummaryClass:
 
         Parameters:
         - n (int, optional): The number of bottom entries to retrieve. Default is 5.
-        - metric (str, optional): The metric by which to determine the bottom entries. 
+        - metric (str, optional): The metric by which to determine the bottom entries.
         If not provided, the default metric specified in the object will be used.
-        - pandas (bool, optional): If True, returns the result as a Pandas DataFrame with 
+        - pandas (bool, optional): If True, returns the result as a Pandas DataFrame with
         the bottom N entries. If False, returns the result as a NumPy array. Default is True.
 
         Returns:
-        - pandas.DataFrame or numpy.ndarray: The bottom N data entries based on the specified 
+        - pandas.DataFrame or numpy.ndarray: The bottom N data entries based on the specified
         metric, either as a Pandas DataFrame or a NumPy array.
 
         Examples
@@ -158,11 +175,15 @@ class SummaryClass:
 
         >>> model.bottom(n=5)
         """
-    
+
         if pandas:
-            return self.DataFrameSummary.sort_values(by=self.default_metric if metric is None else metric, ascending=False).head(n)
+            return self.DataFrameSummary.sort_values(
+                by=self.default_metric if metric is None else metric, ascending=False
+            ).head(n)
         return (
-            self.DataFrameSummary.sort_values(by=self.default_metric if metric is None else metric, ascending=False)
+            self.DataFrameSummary.sort_values(
+                by=self.default_metric if metric is None else metric, ascending=False
+            )
             .bottom(n)
             .to_numpy()
         )
@@ -172,13 +193,13 @@ class SummaryClass:
         Calculate the mean of data grouped by the specified metric.
 
         Parameters:
-        - metric (str, optional): The metric by which to group the data and calculate the mean. 
+        - metric (str, optional): The metric by which to group the data and calculate the mean.
         If not provided, the default metric specified in the object will be used.
-        - pandas (bool, optional): If True, returns the mean as a Pandas DataFrame. 
+        - pandas (bool, optional): If True, returns the mean as a Pandas DataFrame.
         If False, returns the mean as a NumPy array. Default is True.
 
         Returns:
-        - pandas.DataFrame or numpy.ndarray: The mean of data grouped by the specified metric, 
+        - pandas.DataFrame or numpy.ndarray: The mean of data grouped by the specified metric,
         either as a Pandas DataFrame or a NumPy array.
 
         Examples
@@ -191,24 +212,21 @@ class SummaryClass:
         >>> model.mean()
         """
         if pandas:
-            return (self.DataFrameSummary.groupby(
-                self.default_metric
-                if metric is None
-                else metric).mean())
-        return self.DataFrameSummary.groupby(self.default_metric if metric is None else metric).mean().to_numpy()
+            return self.DataFrameSummary.groupby("Model").mean()
+        return self.DataFrameSummary.groupby("Model").mean().to_numpy()
 
     def median(self, metric=None, pandas=True):
         """
         Calculate the median of data grouped by the specified metric.
 
         Parameters:
-        - metric (str, optional): The metric by which to group the data and calculate the median. 
+        - metric (str, optional): The metric by which to group the data and calculate the median.
         If not provided, the default metric specified in the object will be used.
-        - pandas (bool, optional): If True, returns the median as a Pandas DataFrame. 
+        - pandas (bool, optional): If True, returns the median as a Pandas DataFrame.
         If False, returns the median as a NumPy array. Default is True.
 
         Returns:
-        - pandas.DataFrame or numpy.ndarray: The median of data grouped by the specified metric, 
+        - pandas.DataFrame or numpy.ndarray: The median of data grouped by the specified metric,
         either as a Pandas DataFrame or a NumPy array.
 
         Examples
@@ -222,5 +240,5 @@ class SummaryClass:
         """
 
         if pandas:
-            return self.DataFrameSummary.groupby(self.default_metric if metric is None else metric).median()
-        return self.DataFrameSummary.groupby(self.default_metric if metric is None else metric).median().to_numpy()
+            return self.DataFrameSummary.groupby("Model").median()
+        return self.DataFrameSummary.groupby("Model").median().to_numpy()
