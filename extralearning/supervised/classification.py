@@ -203,6 +203,9 @@ class Classification(EstimatorClass, SummaryClass):
         self.f1score.append(f1_score(y_validation, prediction, average="weighted"))
 
     def __verbose(self, text: str, end="\n") -> None:
+        """
+        Reads verbose level of user then prints
+        """
         if self.__verbose_status:
             print(text, end=end)
 

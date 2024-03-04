@@ -43,6 +43,28 @@ from sklearn.neighbors import KNeighborsRegressor
 
 class Regression(EstimatorClass, SummaryClass):
     def __init__(self, random_state=None, n_jobs=None, ignore_warnings=True) -> None:
+        """
+        Summarizes variety of Regression Machine Learning models into one instance.
+
+        Parameters
+        ----------
+        random_state: int, default = None
+            Controls the seed for generating random numbers, ensuring reproducibility in random processes such as data shuffling or initializations.
+
+        n_jobs: int, default = None
+            The number of jobs to run in parallel. fit, predict, decision_path and apply are all parallelized over the trees.
+            None means 1 unless in a joblib.parallel_backend context. -1 means using all processors.
+
+        ignore_warnings: bool, default = True
+            Use to set warnings verbose level, if set to `True` verbose will be ignore, and if set to `False` verbose will be printed.
+
+        Examples
+        --------
+        >>> from extralearning import Regression
+
+        >>> model = Regression(random_state=None, n_jobs=None, ignore_warnings=True)
+        """
+
         assert random_state is None or isinstance(random_state, int), TypeError(
             f"random_state must be int or None, not {type(random_state)}."
         )
@@ -98,6 +120,9 @@ class Regression(EstimatorClass, SummaryClass):
             warnings.filterwarnings("ignore")
 
     def __init_evaluation_arrays(self) -> None:
+        """
+        Initializes the evaluation holding arrays
+        """
         self.MAE = list()
         self.MSE = list()
         self.RMSE = list()
@@ -110,6 +135,10 @@ class Regression(EstimatorClass, SummaryClass):
     def __evaluate_model(
         self, estimator, estimator_name, X_train, X_validation, y_train, y_validation
     ) -> None:
+        """
+        Trains, predicts then evaluates performance of a model.
+        """
+        
         # Loading the model
         model = estimator
 
@@ -129,10 +158,28 @@ class Regression(EstimatorClass, SummaryClass):
         self.variance.append(explained_variance_score(y_validation, prediction))
 
     def __verbose(self, text: str, end="\n") -> None:
+        """
+        Reads verbose level of user then prints
+        """
         if self.__verbose_status:
             print(text, end=end)
 
     def reset_estimators(self) -> None:
+        """
+        Use to reset the estimators to be used to the original list
+
+        Examples
+        --------
+        >>> from extralearning import Regression
+
+        >>> model = Regression()
+
+        >>> model.remove_estimator(estimator = "Linear Regression")
+        >>> model.remove_estimator(estimator = 5)
+
+        >>> model.reset_estimators()
+
+        """
         self.__estimators = [
             ("Linear Regression", LinearRegression(n_jobs=self.n_jobs)),
             (
@@ -170,9 +217,36 @@ class Regression(EstimatorClass, SummaryClass):
         ]
 
     def fit_train(self, X, y, CV=3, CV_params=None, verbose=True) -> None:
+        """
+        Use to train each estimator, make predictions on test data and evaluate the estimator.
+
+        Parameters
+        ----------
+        X: {array-like, sparse matrix} of shape (n_samples, n_features)
+            The training input samples. Internally, its dtype will be converted to dtype=np.float32.
+            If a sparse matrix is provided, it will be converted into a sparse csc_matrix.
+
+        y: array-like of shape (n_samples,) or (n_samples, n_outputs)
+            The target values (class labels in classification, real numbers in regression).
+
+        CV: int or None, default = 3
+            Specifies the number of fold's to train each estimator, if set to `None` only one training will be done and evaluate.
+
+        CV_Stratified: bool, default = True
+            If set to `True` Stratified Cross-validation will be perform, if set to `False` normal KFold will be use.
+
+        CV_params: dict or None, default = None
+            Use to pass params to the StratifiedKFold or KFold cross-validation.
+
+        verbose: bool, default = True
+            Verbose status, if set to `True` all transformation verbose will be printed, if set to `False` transformer will be silenced.
+        """
+
         if not isinstance(X, pd.DataFrame) and not isinstance(y, pd.Series):
+
             try:
                 X, y = pd.DataFrame(X), pd.Series(y)
+                
             except TypeError:
                 print(
                     f"X must be array-like of shape (n_samples, n_features) or pandas.DataFrame and y array-like of shape (n_samples,) or (n_samples, n_outputs)"
