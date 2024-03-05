@@ -179,7 +179,7 @@ class SummaryClass:
         if pandas:
             return self.DataFrameSummary.sort_values(
                 by=self.default_metric if metric is None else metric, ascending=False
-            ).head(n)
+            ).bottom(n)
         return (
             self.DataFrameSummary.sort_values(
                 by=self.default_metric if metric is None else metric, ascending=False
