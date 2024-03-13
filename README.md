@@ -93,5 +93,5 @@ extralearning is a freely available, open-source library crafted during my limit
 
 ## License
 
-espanso was created by [Liam Arguedas](https://github.com/liamarguedas)
+extralearning was created by [Liam Arguedas](https://github.com/liamarguedas)
 and is licensed under the [GPL-3.0 license](/LICENSE).
